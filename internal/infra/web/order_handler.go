@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/danmaciel/clean_arch_golang/internal/entity"
-	"github.com/danmaciel/clean_arch_golang/internal/usecase"
-	"github.com/danmaciel/clean_arch_golang/pkg/events"
+	"github.com/danmaciel/ca_golang/internal/dto"
+	"github.com/danmaciel/ca_golang/internal/entity"
+	"github.com/danmaciel/ca_golang/internal/usecase"
+	"github.com/danmaciel/ca_golang/pkg/events"
 )
 
 type WebOrderHandler struct {
@@ -28,15 +29,16 @@ func NewWebOrderHandler(
 }
 
 func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var dto usecase.OrderInputDTO
+	print("# chamou o create")
+	var dto dto.OrderInputDTO
 	err := json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	createOrder := usecase.NewCreateOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
-	output, err := createOrder.Execute(dto)
+	usecase := usecase.NewCreateOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
+	output, err := usecase.Execute(dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -49,9 +51,9 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *WebOrderHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-
-	createOrder := usecase.NewListOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
-	output, err := createOrder.Execute()
+	print("# chamou o get all")
+	usecase := usecase.NewListOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
+	output, err := usecase.Execute()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 
-	"github.com/danmaciel/clean_arch_golang/internal/entity"
+	"github.com/danmaciel/ca_golang/internal/entity"
 )
 
 type OrderRepository struct {
@@ -19,6 +19,7 @@ func (r *OrderRepository) Save(order *entity.Order) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = stmt.Exec(order.ID, order.Price, order.Tax, order.FinalPrice)
 	if err != nil {
 		return err

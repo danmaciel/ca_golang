@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/danmaciel/clean_arch_golang/pkg/events"
+	"github.com/danmaciel/ca_golang/pkg/events"
 	"github.com/streadway/amqp"
 )
 

@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"github.com/danmaciel/clean_arch_golang/internal/dto"
-	"github.com/danmaciel/clean_arch_golang/internal/entity"
-	"github.com/danmaciel/clean_arch_golang/pkg/events"
+	"github.com/danmaciel/ca_golang/internal/dto"
+	"github.com/danmaciel/ca_golang/internal/entity"
+	"github.com/danmaciel/ca_golang/pkg/events"
 )
 
 type ListOrderOutputDTO struct {

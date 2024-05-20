@@ -8,13 +8,17 @@ package main
 
 import (
 	"database/sql"
-	"github.com/danmaciel/clean_arch_golang/internal/entity"
-	"github.com/danmaciel/clean_arch_golang/internal/event"
-	"github.com/danmaciel/clean_arch_golang/internal/infra/database"
-	"github.com/danmaciel/clean_arch_golang/internal/infra/web"
-	"github.com/danmaciel/clean_arch_golang/internal/usecase"
-	"github.com/danmaciel/clean_arch_golang/pkg/events"
+	"github.com/danmaciel/ca_golang/internal/entity"
+	"github.com/danmaciel/ca_golang/internal/event"
+	"github.com/danmaciel/ca_golang/internal/infra/database"
+	"github.com/danmaciel/ca_golang/internal/infra/web"
+	"github.com/danmaciel/ca_golang/internal/usecase"
+	"github.com/danmaciel/ca_golang/pkg/events"
 	"github.com/google/wire"
+)
+
+import (
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // Injectors from wire.go:
