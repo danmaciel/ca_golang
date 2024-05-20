@@ -23,10 +23,10 @@ Depois ainda na raiz da aplicacao, entre no diretorio cmd e execute o seguinte c
 go run main.go wire_gen.go
 ```
 
-### Para testar via Rest
+### Para testar via Rest(porta 8000)
 Acesse o diretorio "api" na raiz da aplicacao e execute os arquivos .http, create_order.http para criar e list_orders.http para listar
 
-### Para testar via GraphQl
+### Para testar via GraphQl (porta 8080)
 Com a aplicacao rodando, entre abra no browser http://localhost:8080/ e execute:
 
 ```
@@ -38,7 +38,7 @@ query queryListOrders{
 ```
 
 
-### Para testar gRPC
+### Para testar gRPC (porta 50051)
 
 Instale o evans de acordo com o repositorio <link>https://github.com/ktr0731/evans</link> e com a aplicacao rodando execute em um terminal:
 
