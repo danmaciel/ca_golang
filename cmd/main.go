@@ -3,13 +3,18 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/danmaciel/ca_golang/configs"
 	"github.com/danmaciel/ca_golang/internal/infra/graph"
+	"github.com/danmaciel/ca_golang/internal/infra/grpc/pb"
+	"github.com/danmaciel/ca_golang/internal/infra/grpc/service"
 	"github.com/danmaciel/ca_golang/internal/infra/web/webserver"
 	"github.com/danmaciel/ca_golang/pkg/events"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	graphql_handler "github.com/99designs/gqlgen/graphql/handler"
 	// mysql
@@ -37,6 +42,7 @@ func main() {
 	go webserver.Start()
 
 	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
+	listOrderUseCase := NewListOrderUseCase(db, eventDispatcher)
 
 	// graphql
 	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
@@ -47,7 +53,22 @@ func main() {
 	http.Handle("/query", srv)
 
 	fmt.Printf("connect to http://localhost%s/ for GraphQL playground\n", configs.GraphQLServerPort)
-	http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+	go http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+
+	grpcServer := grpc.NewServer()
+	createOrderService := service.NewOrderService(*createOrderUseCase, *listOrderUseCase)
+
+	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
+
+	reflection.Register(grpcServer)
+
+	fmt.Println("Starting gRPC server on port", configs.GRPCServerPort)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", configs.GRPCServerPort))
+	if err != nil {
+		panic(err)
+	}
+
+	grpcServer.Serve(lis)
 
 	print("Rodou")
 }

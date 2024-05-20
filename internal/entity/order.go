@@ -4,12 +4,12 @@ import "errors"
 
 type Order struct {
 	ID         string
-	Price      float64
-	Tax        float64
-	FinalPrice float64
+	Price      float32
+	Tax        float32
+	FinalPrice float32
 }
 
-func NewOrder(id string, price float64, tax float64) (*Order, error) {
+func NewOrder(id string, price float32, tax float32) (*Order, error) {
 	order := &Order{
 		ID:    id,
 		Price: price,
