@@ -1,1 +1,4 @@
 .docker/*
+**/.env
+**/.env.*
+!**/.env.example
