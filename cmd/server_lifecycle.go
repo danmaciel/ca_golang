@@ -41,14 +41,14 @@ func listenAndServe(ctx context.Context, restAddr, graphqlAddr, grpcAddr string,
 // when a stop signal arrives or any server fails.
 func serveListeners(ctx context.Context, restListener, graphqlListener, grpcListener net.Listener, restHandler, graphqlHandler http.Handler, grpcServer *grpc.Server) error {
 	rest := &http.Server{
-		Handler: restHandler,
+		Handler:           restHandler,
 		ReadHeaderTimeout: 5 * time.Second,
-		IdleTimeout: 60 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 	graphql := &http.Server{
-		Handler: graphqlHandler,
+		Handler:           graphqlHandler,
 		ReadHeaderTimeout: 5 * time.Second,
-		IdleTimeout: 60 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	failures := make(chan error, 3)
