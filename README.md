@@ -14,6 +14,12 @@ flowchart LR
     UC --> EV["Dispatcher em memória"]
 ```
 
+### Eventos e consistência
+
+O fluxo de criação **valida o pedido antes da persistência** e só despacha o evento local depois de `Save` retornar sucesso. Cada execução usa seu próprio payload de evento, evitando compartilhar dados mutáveis entre requisições concorrentes. Listagem e criação usam nomes distintos de evento (`ListOrder` e `OrderCreated`).
+
+Isso **não garante atomicidade entre banco e mensageria**: se ocorrer falha entre salvar o pedido e publicar uma mensagem, o banco pode conter um pedido sem evento entregue. O dispatcher usa handlers no mesmo processo e não persiste eventos; na execução principal, não há handler RabbitMQ registrado. Para mensageria confiável em outro sistema seria necessário definir requisitos e avaliar outbox transacional, entrega pelo menos uma vez e idempotência — **nenhum desses mecanismos foi implementado aqui**.
+
 O Docker Compose também inicia um RabbitMQ para estudos. **A aplicação atual não registra um consumidor/publicador RabbitMQ em `cmd/main.go`**; a presença do serviço no Compose não comprova entrega de eventos na fila. O dispatcher existente é local ao processo, sem garantia de persistência ou reprocessamento.
 
 ## Execução local
@@ -68,7 +74,7 @@ go vet ./...
 go build ./...
 ```
 
-O [workflow Go CI](.github/workflows/go.yml) executa essas verificações e formatação a cada pull request e push na `main`. Os testes automatizados atuais cobrem domínio, repositório SQLite e dispatcher local; **não comprovam um cenário integrado de MySQL, RabbitMQ e todos os protocolos**.
+O [workflow Go CI](.github/workflows/go.yml) executa essas verificações e formatação a cada pull request e push na `main`. Os testes automatizados atuais cobrem domínio, repositório SQLite, dispatcher local e concorrência dos payloads de criação; **não comprovam um cenário integrado de MySQL, RabbitMQ e todos os protocolos**.
 
 ## Limitações relevantes
 
