@@ -73,7 +73,7 @@ O [workflow Go CI](.github/workflows/go.yml) executa essas verificações e form
 ## Limitações relevantes
 
 - As portas do MySQL e RabbitMQ são publicadas somente em loopback e as senhas não estão mais fixas no Compose ou no Makefile. **MySQL 5.7 continua sem suporte** e as demais limitações de produção permanecem.
-- Servidores HTTP e gRPC ainda precisam de tratamento de erros de inicialização, ciclo de vida e encerramento coordenado.
+- Os servidores REST, GraphQL e gRPC agora verificam o bind das três portas antes de iniciar, observam falhas de execução e tratam SIGINT/SIGTERM com encerramento coordenado. HTTP usa timeout de cabeçalhos e espera limitada a 10 segundos por requisições em andamento; o gRPC usa `GracefulStop` com fallback `Stop`. Esses testes verificam bind ocupado e requisição HTTP em andamento, **não** demonstram disponibilidade contínua, cobertura de todas as falhas nem desligamento durante chamadas gRPC reais.
 - Integração RabbitMQ com confirmação, tratamento de falhas, retry e outbox não está conectada à execução principal.
 - Valores monetários estão representados por `float32` no domínio: adequado para reproduzir o exercício original, **não uma recomendação para cálculo financeiro real**.
 - Falta cobertura de integração de todos os protocolos e políticas de autenticação, autorização e exposição de rede.
