@@ -9,7 +9,7 @@ type ListOrder struct {
 
 func NewListOrder() *ListOrder {
 	return &ListOrder{
-		Name: "OrderCreated",
+		Name: "ListOrder",
 	}
 }
 
