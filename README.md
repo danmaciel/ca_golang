@@ -18,18 +18,30 @@ O Docker Compose também inicia um RabbitMQ para estudos. **A aplicação atual 
 
 ## Execução local
 
-Este exemplo pressupõe Go compatível com `go.mod`, Docker Compose e `golang-migrate` instalado. Os serviços de infraestrutura usam configurações demonstrativas antigas e **não devem ser expostos a redes não confiáveis**. Consulte [SECURITY_SETUP.md](SECURITY_SETUP.md) antes de iniciar os contêineres.
+Este exemplo pressupõe Go compatível com `go.mod`, Docker Compose e `golang-migrate` instalado. **Use somente em máquina e rede locais isoladas**. O Compose limita as portas do MySQL e RabbitMQ a `127.0.0.1`, mas não substitui firewall, suporte de segurança ou autenticação da aplicação. O MySQL 5.7 foi mantido por compatibilidade com o exercício e está fora de suporte; consulte [SECURITY_SETUP.md](SECURITY_SETUP.md).
 
-1. Revise `docker-compose.yaml` e configure credenciais locais descartáveis antes de iniciar MySQL e RabbitMQ. O arquivo versionado mantém valores demonstrativos.
-2. Inicie os serviços apenas em ambiente isolado:
+1. Na raiz, copie [`.env.example`](.env.example) para `.env` e substitua as senhas de exemplo por valores locais únicos (os valores precisam ser configurados no `.env` local; `docker compose config --quiet` valida a sintaxe, não a presença de todos os segredos):
 
    ```bash
+   cp .env.example .env
+   # Edite .env; nunca publique as credenciais
+   docker compose config --quiet
    docker compose up -d
    ```
 
-3. Crie `cmd/.env` a partir de [`cmd/.env.example`](cmd/.env.example), preenchendo as variáveis do banco. **Não versione `.env`**.
-4. Execute as migrações na raiz usando a ferramenta `migrate`. **Atenção:** o [Makefile](Makefile) atual contém credenciais demonstrativas fixas, portanto adapte o comando/conexão ao seu ambiente antes de executá-lo.
-5. Inicie o programa com o diretório de trabalho `cmd`:
+2. Copie [`cmd/.env.example`](cmd/.env.example) para `cmd/.env`. Configure `DB_USER=root`, `DB_PASSWORD` com a **mesma senha** de `MYSQL_ROOT_PASSWORD` em `.env`, e mantenha `DB_HOST=localhost` e `DB_PORT=3306` para uso pelo Go no host. Os arquivos `.env` são ignorados pelo Git.
+
+3. Instale o `golang-migrate` e configure `MIGRATE_DATABASE_URL` no ambiente do shell, usando a senha local do MySQL com os caracteres especiais codificados conforme a sintaxe de URL da ferramenta. O Makefile **não possui mais credenciais fixas**:
+
+   ```bash
+   # Exemplo de formato; substitua pelo valor local correto no seu shell:
+   export MIGRATE_DATABASE_URL='mysql://root:<SENHA_LOCAL_CODIFICADA>@tcp(127.0.0.1:3306)/orders'
+   make migrate
+   ```
+
+   Não copie uma senha verdadeira para comandos, arquivos ou históricos que serão compartilhados. Evite executar `make migratedown` se precisar preservar dados. A pasta persistida em `.docker/mysql` pode conter dados de versões anteriores: mudar o `.env` não redefine a senha de uma instância MySQL já inicializada.
+
+4. Inicie a aplicação a partir do diretório `cmd`:
 
    ```bash
    cd cmd
@@ -60,7 +72,7 @@ O [workflow Go CI](.github/workflows/go.yml) executa essas verificações e form
 
 ## Limitações relevantes
 
-- A configuração de infraestrutura possui exemplos legados, incluindo MySQL 5.7 e credenciais demonstrativas; não são recomendações para produção.
+- As portas do MySQL e RabbitMQ são publicadas somente em loopback e as senhas não estão mais fixas no Compose ou no Makefile. **MySQL 5.7 continua sem suporte** e as demais limitações de produção permanecem.
 - Servidores HTTP e gRPC ainda precisam de tratamento de erros de inicialização, ciclo de vida e encerramento coordenado.
 - Integração RabbitMQ com confirmação, tratamento de falhas, retry e outbox não está conectada à execução principal.
 - Valores monetários estão representados por `float32` no domínio: adequado para reproduzir o exercício original, **não uma recomendação para cálculo financeiro real**.

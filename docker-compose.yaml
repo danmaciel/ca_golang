@@ -1,26 +1,23 @@
-version: '3'
-
 services:
   mysql:
+    # Legacy MySQL version retained to avoid silently changing the exercise's
+    # database compatibility. MySQL 5.7 is unsupported; use only for isolated study.
     image: mysql:5.7
-    container_name: mysql
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: orders
-      MYSQL_PASSWORD: root
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE=orders
     ports:
-      - 3306:3306
+      - "127.0.0.1:3306:3306"
     volumes:
       - .docker/mysql:/var/lib/mysql
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
-    restart: always
+    restart: unless-stopped
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      - RABBITMQ_DEFAULT_USER
+      - RABBITMQ_DEFAULT_PASS

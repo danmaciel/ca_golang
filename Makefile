@@ -1,11 +1,14 @@
 createmigration:
 	migrate create -ext=sql -dir=internal/infra/migrations -seq init
 
+# Supply MIGRATE_DATABASE_URL through the environment for local migrations.
+# Never commit a database password or connection URL.
 migrate:
-	migrate -path=internal/infra/migrations -database "mysql://root:root@tcp(localhost:3306)/orders" -verbose up
+	@ : "$${MIGRATE_DATABASE_URL:?Set MIGRATE_DATABASE_URL before running make migrate}"
+	@ migrate -path=internal/infra/migrations -database "$$MIGRATE_DATABASE_URL" -verbose up
 
 migratedown:
-	migrate -path=internal/infra/migrations -database "mysql://root:root@tcp(localhost:3306)/orders" -verbose down
-
+	@ : "$${MIGRATE_DATABASE_URL:?Set MIGRATE_DATABASE_URL before running make migratedown}"
+	@ migrate -path=internal/infra/migrations -database "$$MIGRATE_DATABASE_URL" -verbose down
 
 .PHONY: migrate createmigration migratedown
