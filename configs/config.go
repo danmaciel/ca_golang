@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -41,6 +42,16 @@ func LoadConfig(path string) (*conf, error) {
 
 	if err := v.ReadInConfig(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("read local configuration: %w", err)
+	}
+
+	// Fail early with variable names only, never print configured credentials.
+	for _, required := range []string{
+		"DB_DRIVER", "DB_HOST", "DB_PORT", "DB_USER", "DB_NAME",
+		"WEB_SERVER_PORT", "GRPC_SERVER_PORT", "GRAPHQL_SERVER_PORT",
+	} {
+		if strings.TrimSpace(v.GetString(required)) == "" {
+			return nil, fmt.Errorf("missing required configuration: %s", required)
+		}
 	}
 
 	var cfg conf
