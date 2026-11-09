@@ -31,7 +31,9 @@ func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDT
 		Price: input.Price,
 		Tax:   input.Tax,
 	}
-	order.CalculateFinalPrice()
+	if err := order.CalculateFinalPrice(); err != nil {
+		return dto.OrderOutputDTO{}, err
+	}
 	if err := c.OrderRepository.Save(&order); err != nil {
 		return dto.OrderOutputDTO{}, err
 	}
@@ -40,11 +42,12 @@ func (c *CreateOrderUseCase) Execute(input dto.OrderInputDTO) (dto.OrderOutputDT
 		ID:         order.ID,
 		Price:      order.Price,
 		Tax:        order.Tax,
-		FinalPrice: order.Price + order.Tax,
+		FinalPrice: order.FinalPrice,
 	}
 
-	c.OrderCreated.SetPayload(dto)
-	c.EventDispatcher.Dispatch(c.OrderCreated)
+	if err := c.EventDispatcher.Dispatch(events.NewPayloadEvent(c.OrderCreated.GetName(), dto)); err != nil {
+		return dto, err
+	}
 
 	return dto, nil
 }

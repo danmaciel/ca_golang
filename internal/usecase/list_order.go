@@ -44,14 +44,15 @@ func (c *ListOrderUseCase) Execute() (ListOrderOutputDTO, error) {
 			ID:         order.ID,
 			Price:      order.Price,
 			Tax:        order.Tax,
-			FinalPrice: order.Price + order.Tax,
+			FinalPrice: order.FinalPrice,
 		}
 		listDtoOrders = append(listDtoOrders, item)
 	}
 
 	dtoOut := ListOrderOutputDTO{OrderList: listDtoOrders}
-	c.ListOrder.SetPayload(dtoOut)
-	c.EventDispatcher.Dispatch(c.ListOrder)
+	if err := c.EventDispatcher.Dispatch(events.NewPayloadEvent(c.ListOrder.GetName(), dtoOut)); err != nil {
+		return dtoOut, err
+	}
 
 	return dtoOut, nil
 }
