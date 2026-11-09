@@ -18,6 +18,17 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Validate local Compose and no hardcoded migration credentials
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-mysql-placeholder
+          RABBITMQ_DEFAULT_USER: ci-local-user
+          RABBITMQ_DEFAULT_PASS: ci-only-rabbit-placeholder
+        run: |
+          docker compose config --quiet
+          if env -u MIGRATE_DATABASE_URL make migrate; then
+            echo "Migration unexpectedly ran without MIGRATE_DATABASE_URL" >&2
+            exit 1
+          fi
       - name: Check formatting
         run: test -z "$(gofmt -l $(git ls-files '*.go' | grep -vE '(^internal/infra/(graph/generated.go|graph/model/models_gen.go|grpc/pb/))'))"
       - name: Test with race detector
