@@ -11,7 +11,7 @@ import (
 )
 
 type recordingOrders struct {
-	mu sync.Mutex
+	mu    sync.Mutex
 	saved int
 }
 
