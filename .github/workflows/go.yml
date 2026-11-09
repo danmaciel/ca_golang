@@ -30,7 +30,13 @@ jobs:
             exit 1
           fi
       - name: Check formatting
-        run: test -z "$(gofmt -l $(git ls-files '*.go' | grep -vE '(^internal/infra/(graph/generated.go|graph/model/models_gen.go|grpc/pb/))'))"
+        run: |
+          files="$(git ls-files '*.go' | grep -vE '(^internal/infra/(graph/generated.go|graph/model/models_gen.go|grpc/pb/))')"
+          unformatted="$(gofmt -l $files)"
+          if [ -n "$unformatted" ]; then
+            printf 'Go files requiring gofmt:\\n%s\\n' "$unformatted"
+            exit 1
+          fi
       - name: Test with race detector
         run: go test -race ./...
       - name: Static analysis

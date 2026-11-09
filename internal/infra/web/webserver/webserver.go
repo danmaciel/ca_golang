@@ -25,13 +25,19 @@ func (s *WebServer) AddHandler(path string, handler http.HandlerFunc) {
 	s.Handlers[path] = handler
 }
 
-// loop through the handlers and add them to the router
-// register middeleware logger
-// start the server
-func (s *WebServer) Start() {
-	s.Router.Use(middleware.Logger)
+// Handler builds the routing table before the HTTP server starts. The caller
+// owns the listener, timeouts and shutdown.
+func (s *WebServer) Handler() http.Handler {
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 	for path, handler := range s.Handlers {
-		s.Router.Handle(path, handler)
+		r.Handle(path, handler)
 	}
-	http.ListenAndServe(s.WebServerPort, s.Router)
+	return r
+}
+
+// Start remains available for the standalone exercise; callers must handle
+// its error instead of silently discarding failed binds.
+func (s *WebServer) Start() error {
+	return http.ListenAndServe(s.WebServerPort, s.Handler())
 }
