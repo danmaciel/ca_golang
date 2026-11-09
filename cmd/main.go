@@ -1,74 +1,70 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"net"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/99designs/gqlgen/graphql/playground"
+	graphqlhandler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/danmaciel/ca_golang/configs"
 	"github.com/danmaciel/ca_golang/internal/infra/graph"
 	"github.com/danmaciel/ca_golang/internal/infra/grpc/pb"
 	"github.com/danmaciel/ca_golang/internal/infra/grpc/service"
 	"github.com/danmaciel/ca_golang/internal/infra/web/webserver"
 	"github.com/danmaciel/ca_golang/pkg/events"
+	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	graphql_handler "github.com/99designs/gqlgen/graphql/handler"
-	// mysql
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
-	configs, err := configs.LoadConfig(".")
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
+	cfg, err := configs.LoadConfig(".")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("load configuration: %w", err)
 	}
 
-	db, err := sql.Open(configs.DBDriver, fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", configs.DBUser, configs.DBPassword, configs.DBHost, configs.DBPort, configs.DBName))
+	db, err := sql.Open(cfg.DBDriver, fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName))
 	if err != nil {
-		panic(err)
+		// Driver errors may echo the DSN (which contains the password).
+		return fmt.Errorf("open database: %T", err)
 	}
 	defer db.Close()
-	eventDispatcher := events.NewEventDispatcher()
 
-	webserver := webserver.NewWebServer(configs.WebServerPort)
-	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
-	webserver.AddHandler("/order", webOrderHandler.Create)
-	webserver.AddHandler("/list-orders", webOrderHandler.GetAll)
-	fmt.Println("Starting web server on port", configs.WebServerPort)
-	go webserver.Start()
+	dispatcher := events.NewEventDispatcher()
+	rest := webserver.NewWebServer(cfg.WebServerPort)
+	webOrders := NewWebOrderHandler(db, dispatcher)
+	rest.AddHandler("/order", webOrders.Create)
+	rest.AddHandler("/list-orders", webOrders.GetAll)
 
-	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
-	listOrderUseCase := NewListOrderUseCase(db, eventDispatcher)
-
-	// graphql
-	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		CreateOrderUseCase: *createOrderUseCase,
+	createOrder := NewCreateOrderUseCase(db, dispatcher)
+	listOrders := NewListOrderUseCase(db, dispatcher)
+	graphql := graphqlhandler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+		CreateOrderUseCase: *createOrder,
 	}}))
-
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
-
-	fmt.Printf("connect to http://localhost%s/ for GraphQL playground\n", configs.GraphQLServerPort)
-	go http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+	graphqlMux := http.NewServeMux()
+	graphqlMux.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	graphqlMux.Handle("/query", graphql)
 
 	grpcServer := grpc.NewServer()
-	createOrderService := service.NewOrderService(*createOrderUseCase, *listOrderUseCase)
-
-	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
-
+	pb.RegisterOrderServiceServer(grpcServer, service.NewOrderService(*createOrder, *listOrders))
 	reflection.Register(grpcServer)
 
-	fmt.Println("Starting gRPC server on port", configs.GRPCServerPort)
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", configs.GRPCServerPort))
-	if err != nil {
-		panic(err)
-	}
-
-	grpcServer.Serve(lis)
-
-	print("Rodou")
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	log.Printf("Starting REST %s, GraphQL :%s and gRPC :%s", cfg.WebServerPort, cfg.GraphQLServerPort, cfg.GRPCServerPort)
+	return listenAndServe(ctx, cfg.WebServerPort, ":"+cfg.GraphQLServerPort,
+		":"+cfg.GRPCServerPort, rest.Handler(), graphqlMux, grpcServer)
 }
