@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/99designs/gqlgen/graphql/playground"
 	graphqlhandler "github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/danmaciel/ca_golang/configs"
 	"github.com/danmaciel/ca_golang/internal/infra/graph"
 	"github.com/danmaciel/ca_golang/internal/infra/grpc/pb"
