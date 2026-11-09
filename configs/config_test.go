@@ -6,10 +6,24 @@ import (
 	"testing"
 )
 
+func setRequiredEnv(t *testing.T) {
+	t.Helper()
+	for name, value := range map[string]string{
+		"DB_DRIVER": "mysql",
+		"DB_HOST": "127.0.0.1",
+		"DB_PORT": "3306",
+		"DB_USER": "test-user",
+		"DB_NAME": "orders",
+		"WEB_SERVER_PORT": ":8000",
+		"GRPC_SERVER_PORT": "50051",
+		"GRAPHQL_SERVER_PORT": "8080",
+	} {
+		t.Setenv(name, value)
+	}
+}
+
 func TestLoadConfigWithoutDotenvUsesEnvironment(t *testing.T) {
-	t.Setenv("DB_HOST", "127.0.0.1")
-	t.Setenv("DB_DRIVER", "mysql")
-	t.Setenv("WEB_SERVER_PORT", ":8000")
+	setRequiredEnv(t)
 
 	cfg, err := LoadConfig(t.TempDir())
 	if err != nil {
@@ -26,6 +40,7 @@ func TestLoadConfigEnvironmentOverridesDotenv(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(body), 0600); err != nil {
 		t.Fatal(err)
 	}
+	setRequiredEnv(t)
 	t.Setenv("DB_HOST", "from-environment")
 
 	cfg, err := LoadConfig(dir)
@@ -43,8 +58,19 @@ func TestLoadConfigReturnsErrorForInvalidDotenvFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	setRequiredEnv(t)
 	cfg, err := LoadConfig(dir)
 	if err == nil || cfg != nil {
 		t.Fatalf("unreadable .env must return error rather than panic: cfg=%+v err=%v", cfg, err)
+	}
+}
+
+func TestLoadConfigReportsMissingRequiredKey(t *testing.T) {
+	// Do not call setRequiredEnv here: an empty temporary directory must
+	// be rejected rather than returning a partly initialized config.
+	t.Setenv("DB_DRIVER", "")
+	cfg, err := LoadConfig(t.TempDir())
+	if err == nil || cfg != nil {
+		t.Fatalf("expected missing configuration error: cfg=%+v err=%v", cfg, err)
 	}
 }
