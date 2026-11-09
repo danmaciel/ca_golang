@@ -1,6 +1,13 @@
 package configs
 
-import "github.com/spf13/viper"
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/viper"
+)
 
 type conf struct {
 	DBDriver          string `mapstructure:"DB_DRIVER"`
@@ -14,20 +21,31 @@ type conf struct {
 	GraphQLServerPort string `mapstructure:"GRAPHQL_SERVER_PORT"`
 }
 
+// LoadConfig reads an optional local .env and lets process environment values
+// override it. Each call owns its Viper instance so tests do not share state.
 func LoadConfig(path string) (*conf, error) {
-	var cfg *conf
-	viper.SetConfigName("app_config")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(path)
-	viper.SetConfigFile(".env")
-	viper.AutomaticEnv()
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
+	v := viper.New()
+	v.SetConfigFile(filepath.Join(path, ".env"))
+	v.SetConfigType("env")
+	v.AutomaticEnv()
+
+	keys := []string{
+		"DB_DRIVER", "DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD",
+		"DB_NAME", "WEB_SERVER_PORT", "GRPC_SERVER_PORT", "GRAPHQL_SERVER_PORT",
 	}
-	err = viper.Unmarshal(&cfg)
-	if err != nil {
-		panic(err)
+	for _, key := range keys {
+		if err := v.BindEnv(key); err != nil {
+			return nil, fmt.Errorf("bind configuration %s: %w", key, err)
+		}
 	}
-	return cfg, err
+
+	if err := v.ReadInConfig(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("read local configuration: %w", err)
+	}
+
+	var cfg conf
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("decode configuration: %w", err)
+	}
+	return &cfg, nil
 }
