@@ -14,9 +14,9 @@ func NewPayloadEvent(name string, payload interface{}) *PayloadEvent {
 	return &PayloadEvent{name: name, payload: payload, created: time.Now()}
 }
 
-func (e *PayloadEvent) GetName() string { return e.name }
+func (e *PayloadEvent) GetName() string         { return e.name }
 func (e *PayloadEvent) GetPayload() interface{} { return e.payload }
-func (e *PayloadEvent) GetDateTime() time.Time { return e.created }
+func (e *PayloadEvent) GetDateTime() time.Time  { return e.created }
 
 // Retained for compatibility with EventInterface. Dispatch producers should
 // construct an event per request and not modify it after dispatch.
