@@ -9,13 +9,13 @@ import (
 func setRequiredEnv(t *testing.T) {
 	t.Helper()
 	for name, value := range map[string]string{
-		"DB_DRIVER": "mysql",
-		"DB_HOST": "127.0.0.1",
-		"DB_PORT": "3306",
-		"DB_USER": "test-user",
-		"DB_NAME": "orders",
-		"WEB_SERVER_PORT": ":8000",
-		"GRPC_SERVER_PORT": "50051",
+		"DB_DRIVER":            "mysql",
+		"DB_HOST":              "127.0.0.1",
+		"DB_PORT":              "3306",
+		"DB_USER":              "test-user",
+		"DB_NAME":              "orders",
+		"WEB_SERVER_PORT":      ":8000",
+		"GRPC_SERVER_PORT":     "50051",
 		"GRAPHQL_SERVER_PORT": "8080",
 	} {
 		t.Setenv(name, value)
