@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,4 +47,46 @@ func TestGivenAPriceAndTax_WhenICallCalculatePrice_ThenIShouldSetFinalPrice(t *t
 	assert.Nil(t, err)
 	assert.Nil(t, order.CalculateFinalPrice())
 	assert.Equal(t, float32(12), order.FinalPrice)
+}
+
+func TestOrderRejectsNonFinitePriceAndTax(t *testing.T) {
+	cases := []struct {
+		name  string
+		price float32
+		tax   float32
+	}{
+		{"NaN price", float32(math.NaN()), 1},
+		{"positive infinite price", float32(math.Inf(1)), 1},
+		{"negative infinite price", float32(math.Inf(-1)), 1},
+		{"NaN tax", 10, float32(math.NaN())},
+		{"positive infinite tax", 10, float32(math.Inf(1))},
+		{"negative infinite tax", 10, float32(math.Inf(-1))},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			order := &Order{ID: "123", Price: tc.price, Tax: tc.tax, FinalPrice: 77}
+			assert.Error(t, order.IsValid())
+			assert.Error(t, order.CalculateFinalPrice())
+			assert.Equal(t, float32(77), order.FinalPrice,
+				"invalid calculation must not mutate existing final price")
+		})
+	}
+}
+
+func TestOrderRejectsOverflowWithoutChangingFinalPrice(t *testing.T) {
+	order := &Order{
+		ID:         "123",
+		Price:      math.MaxFloat32,
+		Tax:        math.MaxFloat32,
+		FinalPrice: 77,
+	}
+	assert.NoError(t, order.IsValid(), "inputs are finite and positive")
+	assert.Error(t, order.CalculateFinalPrice(), "sum overflows float32")
+	assert.Equal(t, float32(77), order.FinalPrice)
+}
+
+func TestOrderInvalidInputDoesNotChangeFinalPrice(t *testing.T) {
+	order := &Order{ID: "123", Price: -1, Tax: 2, FinalPrice: 33}
+	assert.Error(t, order.CalculateFinalPrice())
+	assert.Equal(t, float32(33), order.FinalPrice)
 }
