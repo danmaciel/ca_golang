@@ -1,6 +1,9 @@
 package entity
 
-import "errors"
+import (
+	"errors"
+	"math"
+)
 
 type Order struct {
 	ID         string
@@ -26,20 +29,23 @@ func (o *Order) IsValid() error {
 	if o.ID == "" {
 		return errors.New("invalid id")
 	}
-	if o.Price <= 0 {
+	if math.IsNaN(float64(o.Price)) || math.IsInf(float64(o.Price), 0) || o.Price <= 0 {
 		return errors.New("invalid price")
 	}
-	if o.Tax <= 0 {
+	if math.IsNaN(float64(o.Tax)) || math.IsInf(float64(o.Tax), 0) || o.Tax <= 0 {
 		return errors.New("invalid tax")
 	}
 	return nil
 }
 
 func (o *Order) CalculateFinalPrice() error {
-	o.FinalPrice = o.Price + o.Tax
-	err := o.IsValid()
-	if err != nil {
+	if err := o.IsValid(); err != nil {
 		return err
 	}
+	finalPrice := o.Price + o.Tax
+	if math.IsNaN(float64(finalPrice)) || math.IsInf(float64(finalPrice), 0) {
+		return errors.New("invalid final price")
+	}
+	o.FinalPrice = finalPrice
 	return nil
 }
