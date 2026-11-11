@@ -18,6 +18,8 @@ flowchart LR
 
 O fluxo de criação **valida o pedido antes da persistência** e só despacha o evento local depois de `Save` retornar sucesso. Cada execução usa seu próprio payload de evento, evitando compartilhar dados mutáveis entre requisições concorrentes. Listagem e criação usam nomes distintos de evento (`ListOrder` e `OrderCreated`).
 
+Os testes de falha controlada em `internal/usecase/create_order_failure_test.go` registram o contrato atual: **falha em `Save` impede o despacho**, mas **falha em `Dispatch` acontece depois da persistência**, e o método retorna o pedido criado acompanhado do erro. Além disso, o dispatcher em memória pode retornar sucesso **sem nenhum handler registrado**; sucesso no caso de uso não comprova entrega de mensagem. O teste injeta um dispatcher que retorna erro para verificar a reação do caso de uso — o dispatcher local real não informa erros internos dos handlers.
+
 Isso **não garante atomicidade entre banco e mensageria**: se ocorrer falha entre salvar o pedido e publicar uma mensagem, o banco pode conter um pedido sem evento entregue. O dispatcher usa handlers no mesmo processo e não persiste eventos; na execução principal, não há handler RabbitMQ registrado. Para mensageria confiável em outro sistema seria necessário definir requisitos e avaliar outbox transacional, entrega pelo menos uma vez e idempotência — **nenhum desses mecanismos foi implementado aqui**.
 
 O Docker Compose também inicia um RabbitMQ para estudos. **A aplicação atual não registra um consumidor/publicador RabbitMQ em `cmd/main.go`**; a presença do serviço no Compose não comprova entrega de eventos na fila. O dispatcher existente é local ao processo, sem garantia de persistência ou reprocessamento.
