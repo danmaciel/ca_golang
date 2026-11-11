@@ -12,9 +12,9 @@ import (
 
 // faultingOrderRepository allows deterministic failure injection without a DB.
 type faultingOrderRepository struct {
-	saveErr error
+	saveErr   error
 	saveCalls int
-	stored *entity.Order
+	stored    *entity.Order
 }
 
 func (r *faultingOrderRepository) Save(order *entity.Order) error {
@@ -35,9 +35,9 @@ func (*faultingOrderRepository) GetAll() ([]entity.Order, error) {
 // unused methods of EventDispatcherInterface for this focused use-case test.
 type eventDispatchProbe struct {
 	events.EventDispatcherInterface
-	dispatchErr error
+	dispatchErr   error
 	dispatchCalls int
-	lastEvent events.EventInterface
+	lastEvent     events.EventInterface
 }
 
 func (p *eventDispatchProbe) Dispatch(ev events.EventInterface) error {
