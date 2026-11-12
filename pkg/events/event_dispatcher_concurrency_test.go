@@ -100,7 +100,7 @@ func TestRegistryOperationsRemainRaceFreeWithConcurrentDispatch(t *testing.T) {
 	handler := &countingHandler{}
 	const operations = 100
 	var wg sync.WaitGroup
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func(worker int) {
 			defer wg.Done()
@@ -117,6 +117,8 @@ func TestRegistryOperationsRemainRaceFreeWithConcurrentDispatch(t *testing.T) {
 						t.Errorf("unexpected dispatch error: %v", err)
 						return
 					}
+				case 4:
+					dispatcher.Clear()
 				}
 			}
 		}(i)
